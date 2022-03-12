@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ethers } from 'ethers';
+import { errors, ethers } from 'ethers';
 import './App.css';
 import Greeter from './artifacts/contracts/Greeter.sol/Greeter.json'
 
@@ -11,6 +11,7 @@ function App() {
 
 
   async function fetchGreeting (){
+    // check to see if they have metamask installed
     if(typeof window.ethereum !== 'undefined'){
       const provider = new ethers.providers.Web3Provider(window.ethereum);
       const contract = new ethers.Contract(greeterAddress, Greeter.abi, provider);
@@ -19,16 +20,26 @@ function App() {
         const data = await contract.greet();
         console.log('data', data)
       }catch{
-        console.log("Error", err)
+        console.log("Error", errors)
       }
     }
   }
 
   async function setGreeting(){
-
+    if(!greeting) return;
+    if(typeof window.ethereum !== 'undefined'){
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(greeterAddress, Greeter.abi, signer);
+      const transaction = await contract.setGreeting(greeting)
+      await transaction.wait();
+      fetchGreeting()
+    }
   }
 
-  async function requestAccount(){}
+  async function requestAccount(){
+    await window.ethereum.request({method: 'eth_requestAccounts'});
+  }
   return (
     <div className="App">
       <header className="App-header">
